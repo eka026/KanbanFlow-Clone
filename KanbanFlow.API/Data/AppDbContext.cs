@@ -10,5 +10,9 @@ namespace KanbanFlow.API.Data
         }
 
         public DbSet<TaskItem> TaskItems { get; set; }
+
+        public DbSet<Project> Projects { get; set; }
+
+        public DbSet<Column> Columns { get; set; }
     }
 }
