@@ -19,7 +19,7 @@ namespace KanbanFlow.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Column>>> GetColumns()
         {
-            return await _context.Columns.Include(c => c.TaskItems).ToListAsync();
+            return await _context.Columns.ToListAsync();
         }
 
         [HttpGet("{id}")]
