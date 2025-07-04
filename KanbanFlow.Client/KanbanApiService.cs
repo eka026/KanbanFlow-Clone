@@ -1,5 +1,5 @@
 using System.Net.Http.Json;
-using KanbanFlow.Core;
+using KanbanFlow.Client.Dtos;
 
 public class KanbanApiService
 {
@@ -12,11 +12,11 @@ public class KanbanApiService
         _apiUrl = apiUrl;
     }
 
-    public async Task<List<TaskItem>?> GetTasksAsync()
+    public async Task<List<TaskItemDto>?> GetTasksAsync()
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<List<TaskItem>>($"{_apiUrl}/api/tasks");
+            return await _httpClient.GetFromJsonAsync<List<TaskItemDto>>($"{_apiUrl}/api/tasks");
         }
         catch (HttpRequestException ex)
         {
@@ -25,13 +25,13 @@ public class KanbanApiService
         }
     }
 
-    public async Task<TaskItem?> CreateTaskAsync(TaskItem newTask)
+    public async Task<TaskItemDto?> CreateTaskAsync(CreateTaskItemDto newTask)
     {
         try
         {
             var response = await _httpClient.PostAsJsonAsync($"{_apiUrl}/api/tasks", newTask);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<TaskItem>();
+            return await response.Content.ReadFromJsonAsync<TaskItemDto>();
         }
         catch (HttpRequestException ex)
         {
@@ -40,11 +40,11 @@ public class KanbanApiService
         }
     }
 
-    public async Task<List<Column>?> GetColumnsAsync()
+    public async Task<List<ColumnDto>?> GetColumnsAsync()
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<List<Column>>($"{_apiUrl}/api/columns");
+            return await _httpClient.GetFromJsonAsync<List<ColumnDto>>($"{_apiUrl}/api/columns");
         }
         catch (HttpRequestException ex)
         {

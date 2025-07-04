@@ -1,4 +1,6 @@
+using AutoMapper;
 using KanbanFlow.API.Data;
+using KanbanFlow.API.Dtos;
 using KanbanFlow.Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,21 +12,23 @@ namespace KanbanFlow.API.Controllers
     public class TasksController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
-        public TasksController(AppDbContext context)
+        public TasksController(AppDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TaskItem>>> GetAllTasksAsync()
+        public async Task<ActionResult<IEnumerable<TaskItemDto>>> GetAllTasksAsync()
         {
             var tasks = await _context.TaskItems.ToListAsync();
-            return Ok(tasks);
+            return Ok(_mapper.Map<IEnumerable<TaskItemDto>>(tasks));
         }
 
         [HttpGet("{id}", Name = "GetTaskById")]
-        public async Task<ActionResult<TaskItem>> GetTaskByIdAsync(int id)
+        public async Task<ActionResult<TaskItemDto>> GetTaskByIdAsync(int id)
         {
             var task = await _context.TaskItems.FindAsync(id);
 
@@ -33,28 +37,32 @@ namespace KanbanFlow.API.Controllers
                 return NotFound();
             }
 
-            return Ok(task);
+            return Ok(_mapper.Map<TaskItemDto>(task));
         }
 
         [HttpPost]
-        public async Task<ActionResult<TaskItem>> CreateTaskAsync(TaskItem task)
+        public async Task<ActionResult<TaskItemDto>> CreateTaskAsync(CreateTaskItemDto taskDto)
         {
+            var task = _mapper.Map<TaskItem>(taskDto);
+            task.CreatedDate = DateTime.UtcNow;
+            task.Status = Core.TaskStatus.ToDo;
+
             _context.TaskItems.Add(task);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetTaskById", new { id = task.Id }, task);
+            return CreatedAtAction("GetTaskById", new { id = task.Id }, _mapper.Map<TaskItemDto>(task));
         }
 
         [HttpPut("{id}")]
-
-        public async Task<IActionResult> UpdateTaskAsync(int id, TaskItem task)
+        public async Task<IActionResult> UpdateTaskAsync(int id, UpdateTaskItemDto taskDto)
         {
-            if (id != task.Id)
+            var task = await _context.TaskItems.FindAsync(id);
+            if (task == null)
             {
-                return BadRequest();
+                return NotFound();
             }
 
-            _context.Entry(task).State = EntityState.Modified;
+            _mapper.Map(taskDto, task);
 
             try
             {

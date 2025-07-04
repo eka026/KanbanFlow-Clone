@@ -1,4 +1,6 @@
+using AutoMapper;
 using KanbanFlow.API.Data;
+using KanbanFlow.API.Dtos;
 using KanbanFlow.Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,25 +12,27 @@ namespace KanbanFlow.API.Controllers
     public class ProjectsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
-        public ProjectsController(AppDbContext context)
+        public ProjectsController(AppDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Project>>> GetProjects()
+        public async Task<ActionResult<IEnumerable<ProjectDto>>> GetProjects()
         {
             var projects = await _context.Projects
                 .Include(p => p.Columns)
                 .ThenInclude(c => c.TaskItems)
                 .ToListAsync();
 
-            return Ok(projects);
+            return Ok(_mapper.Map<IEnumerable<ProjectDto>>(projects));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Project>> GetProject(int id)
+        public async Task<ActionResult<ProjectDto>> GetProject(int id)
         {
             var project = await _context.Projects
                 .Include(p => p.Columns)
@@ -40,11 +44,11 @@ namespace KanbanFlow.API.Controllers
                 return NotFound();
             }
 
-            return Ok(project);
+            return Ok(_mapper.Map<ProjectDto>(project));
         }
 
         [HttpGet("{projectId}/tasks")]
-        public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasksForProject(int projectId)
+        public async Task<ActionResult<IEnumerable<TaskItemDto>>> GetTasksForProject(int projectId)
         {
             var projectExists = await _context.Projects.AnyAsync(p => p.Id == projectId);
             if (!projectExists)
@@ -56,27 +60,29 @@ namespace KanbanFlow.API.Controllers
                 .Where(t => t.Column.ProjectId == projectId)
                 .ToListAsync();
 
-            return Ok(tasks);
+            return Ok(_mapper.Map<IEnumerable<TaskItemDto>>(tasks));
         }
 
         [HttpPost]
-        public async Task<ActionResult<Project>> PostProject(Project project)
+        public async Task<ActionResult<ProjectDto>> PostProject(CreateProjectDto projectDto)
         {
+            var project = _mapper.Map<Project>(projectDto);
             _context.Projects.Add(project);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetProject), new { id = project.Id }, project);
+            return CreatedAtAction(nameof(GetProject), new { id = project.Id }, _mapper.Map<ProjectDto>(project));
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProject(int id, Project project)
+        public async Task<IActionResult> PutProject(int id, UpdateProjectDto projectDto)
         {
-            if (id != project.Id)
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null)
             {
-                return BadRequest();
+                return NotFound();
             }
 
-            _context.Entry(project).State = EntityState.Modified;
+            _mapper.Map(projectDto, project);
 
             try
             {

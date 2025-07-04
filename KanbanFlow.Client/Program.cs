@@ -1,5 +1,4 @@
-using System.Runtime.CompilerServices;
-using KanbanFlow.Core;
+using KanbanFlow.Client.Dtos;
 using Microsoft.Extensions.Configuration;
 
 IConfiguration configuration = new ConfigurationBuilder()
@@ -100,14 +99,7 @@ async Task CreateNewTask()
         return;
     }
 
-    var newTask = new TaskItem
-    {
-        Title = title,
-        Description = description,
-        Status = KanbanFlow.Core.TaskStatus.ToDo,
-        CreatedDate = DateTime.UtcNow,
-        ColumnId = chosenColumnId
-    };
+    var newTask = new CreateTaskItemDto(title, description, chosenColumnId);
 
     var createdTask = await apiService.CreateTaskAsync(newTask);
 

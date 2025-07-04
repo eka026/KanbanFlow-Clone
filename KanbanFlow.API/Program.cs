@@ -7,10 +7,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add DbContext for Entity Framework
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(builder.Configuration.GetConnectionString(builder.Configuration["Database:ConnectionStringName"])));
 
 // Add support for controllers
 builder.Services.AddControllers();
+
+// Add AutoMapper
+builder.Services.AddAutoMapper(typeof(Program));
 
 // Add Swagger/OpenAPI for API documentation and testing
 builder.Services.AddEndpointsApiExplorer();

@@ -1,4 +1,6 @@
+using AutoMapper;
 using KanbanFlow.API.Data;
+using KanbanFlow.API.Dtos;
 using KanbanFlow.Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,20 +12,23 @@ namespace KanbanFlow.API.Controllers
     public class ColumnsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
-        public ColumnsController(AppDbContext context)
+        public ColumnsController(AppDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Column>>> GetColumns()
+        public async Task<ActionResult<IEnumerable<ColumnDto>>> GetColumns()
         {
-            return await _context.Columns.ToListAsync();
+            var columns = await _context.Columns.ToListAsync();
+            return Ok(_mapper.Map<IEnumerable<ColumnDto>>(columns));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Column>> GetColumn(int id)
+        public async Task<ActionResult<ColumnDto>> GetColumn(int id)
         {
             var column = await _context.Columns.Include(c => c.TaskItems).FirstOrDefaultAsync(c => c.Id == id);
 
@@ -32,27 +37,29 @@ namespace KanbanFlow.API.Controllers
                 return NotFound();
             }
 
-            return column;
+            return Ok(_mapper.Map<ColumnDto>(column));
         }
 
         [HttpPost]
-        public async Task<ActionResult<Column>> PostColumn(Column column)
+        public async Task<ActionResult<ColumnDto>> PostColumn(CreateColumnDto columnDto)
         {
+            var column = _mapper.Map<Column>(columnDto);
             _context.Columns.Add(column);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetColumn", new { id = column.Id }, column);
+            return CreatedAtAction("GetColumn", new { id = column.Id }, _mapper.Map<ColumnDto>(column));
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutColumn(int id, Column column)
+        public async Task<IActionResult> PutColumn(int id, UpdateColumnDto columnDto)
         {
-            if (id != column.Id)
+            var column = await _context.Columns.FindAsync(id);
+            if (column == null)
             {
-                return BadRequest();
+                return NotFound();
             }
 
-            _context.Entry(column).State = EntityState.Modified;
+            _mapper.Map(columnDto, column);
 
             try
             {
