@@ -18,6 +18,10 @@ namespace KanbanFlow.API.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<TaskItem>()
+                .Property(t => t.Status)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<TaskItem>()
                 .HasIndex(t => new { t.Position, t.ColumnId })
                 .IsUnique();
         }
