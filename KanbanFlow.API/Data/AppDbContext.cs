@@ -14,5 +14,12 @@ namespace KanbanFlow.API.Data
         public DbSet<Project> Projects { get; set; }
 
         public DbSet<Column> Columns { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<TaskItem>()
+                .HasIndex(t => new { t.Position, t.ColumnId })
+                .IsUnique();
+        }
     }
 }

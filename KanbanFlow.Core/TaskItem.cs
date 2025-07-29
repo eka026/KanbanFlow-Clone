@@ -19,6 +19,7 @@ namespace KanbanFlow.Core
         public TaskStatus Status { get; set; }
 
         public int ColumnId { get; set; } // Foreign Key
+        public int Position { get; set; }
 
         public virtual Column? Column { get; set; } 
     }
