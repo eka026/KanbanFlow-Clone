@@ -7,6 +7,8 @@ namespace KanbanFlow.Core
         public int Id { get; set; }
         public required string Name { get; set; }
 
+        public byte[] RowVersion { get; set; } = [];
+
         public virtual ICollection<Column> Columns { get; set; }
 
         public Project()

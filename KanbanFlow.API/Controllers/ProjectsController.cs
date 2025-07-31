@@ -84,6 +84,8 @@ namespace KanbanFlow.API.Controllers
 
             _mapper.Map(projectDto, project);
 
+            _context.Entry(project).Property(p => p.RowVersion).OriginalValue = projectDto.RowVersion;
+
             try
             {
                 await _context.SaveChangesAsync();
@@ -96,7 +98,7 @@ namespace KanbanFlow.API.Controllers
                 }
                 else
                 {
-                    throw;
+                    return Conflict("The project has been modified by another user. Please reload and try again.");
                 }
             }
 

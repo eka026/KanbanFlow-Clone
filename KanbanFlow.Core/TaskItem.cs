@@ -21,6 +21,8 @@ namespace KanbanFlow.Core
         public int ColumnId { get; set; } // Foreign Key
         public int Position { get; set; }
 
+        public byte[] RowVersion { get; set; } = [];
+
         public virtual Column? Column { get; set; }
 
         public bool ChangeStatus(TaskStatus newStatus)

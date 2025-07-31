@@ -2,4 +2,4 @@ using System.ComponentModel.DataAnnotations;
 
 namespace KanbanFlow.API.Dtos;
 
-public record UpdateColumnDto([Required] string Name);
+public record UpdateColumnDto([Required] string Name, byte[] RowVersion);

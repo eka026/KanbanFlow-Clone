@@ -108,6 +108,8 @@ namespace KanbanFlow.API.Controllers
                 return BadRequest("Invalid status transition.");
             }
 
+            _context.Entry(task).Property(p => p.RowVersion).OriginalValue = taskDto.RowVersion;
+
             try
             {
                 await _context.SaveChangesAsync();
@@ -120,7 +122,7 @@ namespace KanbanFlow.API.Controllers
                 }
                 else
                 {
-                    throw;
+                    return Conflict("The task has been modified by another user. Please reload and try again.");
                 }
             }
 

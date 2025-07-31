@@ -61,6 +61,8 @@ namespace KanbanFlow.API.Controllers
 
             _mapper.Map(columnDto, column);
 
+            _context.Entry(column).Property(c => c.RowVersion).OriginalValue = columnDto.RowVersion;
+
             try
             {
                 await _context.SaveChangesAsync();
@@ -73,7 +75,7 @@ namespace KanbanFlow.API.Controllers
                 }
                 else
                 {
-                    throw;
+                    return Conflict("The column has been modified by another user. Please reload and try again.");
                 }
             }
 

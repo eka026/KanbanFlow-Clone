@@ -24,6 +24,18 @@ namespace KanbanFlow.API.Data
             modelBuilder.Entity<TaskItem>()
                 .HasIndex(t => new { t.Position, t.ColumnId })
                 .IsUnique();
+
+            modelBuilder.Entity<Project>()
+                .Property(p => p.RowVersion)
+                .IsRowVersion();
+
+            modelBuilder.Entity<Column>()
+                .Property(c => c.RowVersion)
+                .IsRowVersion();
+
+            modelBuilder.Entity<TaskItem>()
+                .Property(t => t.RowVersion)
+                .IsRowVersion();
         }
     }
 }
