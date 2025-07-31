@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add DbContext for Entity Framework
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString(builder.Configuration["Database:ConnectionStringName"])));
+    options.UseSqlite(builder.Configuration.GetConnectionString(builder.Configuration["Database:ConnectionStringName"] ?? "DefaultConnection")));
 
 // Add support for controllers
 builder.Services.AddControllers();

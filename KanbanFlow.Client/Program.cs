@@ -5,7 +5,13 @@ IConfiguration configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .Build();
 
-string apiUrl = configuration["ApiUrl"];
+string? apiUrl = configuration["ApiUrl"];
+
+if (string.IsNullOrEmpty(apiUrl))
+{
+    Console.WriteLine("API URL is not configured in appsettings.json. Please add it and try again.");
+    return;
+}
 
 Console.WriteLine("KanbanFlow Client");
 Console.WriteLine("-----------------");

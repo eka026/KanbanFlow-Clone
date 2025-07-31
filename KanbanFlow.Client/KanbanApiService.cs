@@ -4,9 +4,9 @@ using KanbanFlow.Client.Dtos;
 public class KanbanApiService
 {
     private readonly HttpClient _httpClient;
-    private readonly string _apiUrl;
+    private readonly string? _apiUrl;
 
-    public KanbanApiService(string apiUrl)
+    public KanbanApiService(string? apiUrl)
     {
         _httpClient = new HttpClient();
         _apiUrl = apiUrl;
@@ -14,6 +14,7 @@ public class KanbanApiService
 
     public async Task<List<TaskItemDto>?> GetTasksAsync()
     {
+        if (string.IsNullOrEmpty(_apiUrl)) return null;
         try
         {
             return await _httpClient.GetFromJsonAsync<List<TaskItemDto>>($"{_apiUrl}/api/tasks");
@@ -27,6 +28,7 @@ public class KanbanApiService
 
     public async Task<TaskItemDto?> CreateTaskAsync(CreateTaskItemDto newTask)
     {
+        if (string.IsNullOrEmpty(_apiUrl)) return null;
         try
         {
             var response = await _httpClient.PostAsJsonAsync($"{_apiUrl}/api/tasks", newTask);
@@ -42,6 +44,7 @@ public class KanbanApiService
 
     public async Task<List<ColumnDto>?> GetColumnsAsync()
     {
+        if (string.IsNullOrEmpty(_apiUrl)) return null;
         try
         {
             return await _httpClient.GetFromJsonAsync<List<ColumnDto>>($"{_apiUrl}/api/columns");

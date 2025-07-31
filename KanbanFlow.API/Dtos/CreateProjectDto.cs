@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace KanbanFlow.API.Dtos;
 
-public record CreateProjectDto(string Name);
+public record CreateProjectDto([Required] string Name);

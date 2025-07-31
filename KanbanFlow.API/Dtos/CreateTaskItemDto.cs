@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace KanbanFlow.API.Dtos;
 
-public record CreateTaskItemDto(string Title, string? Description, int ColumnId);
+public record CreateTaskItemDto([Required] string Title, string? Description, [Range(1, int.MaxValue)] int ColumnId);

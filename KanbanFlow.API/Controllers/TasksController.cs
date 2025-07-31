@@ -103,6 +103,11 @@ namespace KanbanFlow.API.Controllers
 
             _mapper.Map(taskDto, task);
 
+            if (!task.ChangeStatus(taskDto.Status))
+            {
+                return BadRequest("Invalid status transition.");
+            }
+
             try
             {
                 await _context.SaveChangesAsync();

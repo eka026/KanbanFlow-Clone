@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace KanbanFlow.API.Dtos;
 
-public record UpdateColumnDto(string Name);
+public record UpdateColumnDto([Required] string Name);

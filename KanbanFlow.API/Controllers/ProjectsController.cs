@@ -57,7 +57,7 @@ namespace KanbanFlow.API.Controllers
             }
 
             var tasks = await _context.TaskItems
-                .Where(t => t.Column.ProjectId == projectId)
+                .Where(t => t.Column != null && t.Column.ProjectId == projectId)
                 .ToListAsync();
 
             return Ok(_mapper.Map<IEnumerable<TaskItemDto>>(tasks));
