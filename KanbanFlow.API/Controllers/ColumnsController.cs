@@ -1,7 +1,7 @@
 using AutoMapper;
-using KanbanFlow.API.Data;
 using KanbanFlow.API.Dtos;
 using KanbanFlow.Core;
+using KanbanFlow.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,26 +11,26 @@ namespace KanbanFlow.API.Controllers
     [Route("api/[controller]")]
     public class ColumnsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public ColumnsController(AppDbContext context, IMapper mapper)
+        public ColumnsController(IUnitOfWork unitOfWork, IMapper mapper)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ColumnDto>>> GetColumns()
         {
-            var columns = await _context.Columns.ToListAsync();
+            var columns = await _unitOfWork.Columns.GetAllAsync();
             return Ok(_mapper.Map<IEnumerable<ColumnDto>>(columns));
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ColumnDto>> GetColumn(int id)
         {
-            var column = await _context.Columns.Include(c => c.TaskItems).FirstOrDefaultAsync(c => c.Id == id);
+            var column = await _unitOfWork.Columns.GetColumnWithDetailsAsync(id);
 
             if (column == null)
             {
@@ -44,8 +44,8 @@ namespace KanbanFlow.API.Controllers
         public async Task<ActionResult<ColumnDto>> PostColumn(CreateColumnDto columnDto)
         {
             var column = _mapper.Map<Column>(columnDto);
-            _context.Columns.Add(column);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.Columns.AddAsync(column);
+            await _unitOfWork.CompleteAsync();
 
             return CreatedAtAction("GetColumn", new { id = column.Id }, _mapper.Map<ColumnDto>(column));
         }
@@ -53,7 +53,7 @@ namespace KanbanFlow.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutColumn(int id, UpdateColumnDto columnDto)
         {
-            var column = await _context.Columns.FindAsync(id);
+            var column = await _unitOfWork.Columns.GetByIdAsync(id);
             if (column == null)
             {
                 return NotFound();
@@ -61,22 +61,15 @@ namespace KanbanFlow.API.Controllers
 
             _mapper.Map(columnDto, column);
 
-            _context.Entry(column).Property(c => c.RowVersion).OriginalValue = columnDto.RowVersion;
+            _unitOfWork.Columns.Update(column);
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _unitOfWork.CompleteAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!ColumnExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    return Conflict("The column has been modified by another user. Please reload and try again.");
-                }
+                return Conflict("The column has been modified by another user. Please reload and try again.");
             }
 
             return NoContent();
@@ -85,21 +78,16 @@ namespace KanbanFlow.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteColumn(int id)
         {
-            var column = await _context.Columns.FindAsync(id);
+            var column = await _unitOfWork.Columns.GetByIdAsync(id);
             if (column == null)
             {
                 return NotFound();
             }
 
-            _context.Columns.Remove(column);
-            await _context.SaveChangesAsync();
+            _unitOfWork.Columns.Remove(column);
+            await _unitOfWork.CompleteAsync();
 
             return NoContent();
-        }
-
-        private bool ColumnExists(int id)
-        {
-            return _context.Columns.Any(e => e.Id == id);
         }
     }
 }
