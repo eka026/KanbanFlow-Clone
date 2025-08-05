@@ -4,34 +4,51 @@ using KanbanFlow.Core;
 using KanbanFlow.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using KanbanFlow.API.Services;
 
 namespace KanbanFlow.API.Controllers
 {
     [ApiVersion("1.0")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
+    [Authorize]
     public class TasksController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IUserContextService _userContextService;
 
-        public TasksController(IUnitOfWork unitOfWork, IMapper mapper)
+        public TasksController(IUnitOfWork unitOfWork, IMapper mapper, IUserContextService userContextService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _userContextService = userContextService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TaskItemDto>>> GetAllTasksAsync()
         {
-            var tasks = await _unitOfWork.TaskItems.GetAllAsync();
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var tasks = await _unitOfWork.TaskItems.GetTasksForUserAsync(userId);
             return Ok(_mapper.Map<IEnumerable<TaskItemDto>>(tasks));
         }
 
         [HttpGet("{id}", Name = "GetTaskById")]
         public async Task<ActionResult<TaskItemDto>> GetTaskByIdAsync(int id)
         {
-            var task = await _unitOfWork.TaskItems.GetByIdAsync(id);
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var task = await _unitOfWork.TaskItems.GetTaskByIdForUserAsync(id, userId);
 
             if (task == null)
             {
@@ -44,7 +61,13 @@ namespace KanbanFlow.API.Controllers
         [HttpPost]
         public async Task<ActionResult<TaskItemDto>> CreateTaskAsync(CreateTaskItemDto taskDto)
         {
-            var column = await _unitOfWork.Columns.GetColumnWithDetailsAsync(taskDto.ColumnId);
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var column = await _unitOfWork.Columns.GetColumnWithDetailsAsync(taskDto.ColumnId, userId);
             if (column == null)
             {
                 return BadRequest("Invalid column ID.");
@@ -56,6 +79,7 @@ namespace KanbanFlow.API.Controllers
             }
 
             var task = _mapper.Map<TaskItem>(taskDto);
+            task.UserId = userId;
             task.CreatedDate = DateTime.UtcNow;
             task.Status = Core.TaskStatus.ToDo;
             task.Position = column.TaskItems.Any() ? column.TaskItems.Max(t => t.Position) + 1 : 0;
@@ -69,7 +93,13 @@ namespace KanbanFlow.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTaskAsync(int id, UpdateTaskItemDto taskDto)
         {
-            var task = await _unitOfWork.TaskItems.GetByIdAsync(id);
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var task = await _unitOfWork.TaskItems.GetTaskByIdForUserAsync(id, userId);
             if (task == null)
             {
                 return NotFound();
@@ -80,7 +110,7 @@ namespace KanbanFlow.API.Controllers
 
             if (originalColumnId != newColumnId)
             {
-                var newColumn = await _unitOfWork.Columns.GetColumnWithDetailsAsync(newColumnId);
+                var newColumn = await _unitOfWork.Columns.GetColumnWithDetailsAsync(newColumnId, userId);
                 if (newColumn == null)
                 {
                     return BadRequest("Invalid column ID.");
@@ -91,7 +121,7 @@ namespace KanbanFlow.API.Controllers
                     return BadRequest("WIP limit reached for this column.");
                 }
 
-                var tasksToUpdate = await _unitOfWork.TaskItems.FindAsync(t => t.ColumnId == originalColumnId && t.Position > task.Position);
+                var tasksToUpdate = await _unitOfWork.TaskItems.FindAsync(t => t.ColumnId == originalColumnId && t.Position > task.Position && t.UserId == userId);
 
                 foreach (var taskToUpdate in tasksToUpdate)
                 {
@@ -123,7 +153,13 @@ namespace KanbanFlow.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTaskAsync(int id)
         {
-            var task = await _unitOfWork.TaskItems.GetByIdAsync(id);
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var task = await _unitOfWork.TaskItems.GetTaskByIdForUserAsync(id, userId);
             if (task == null)
             {
                 return NotFound();
@@ -138,7 +174,13 @@ namespace KanbanFlow.API.Controllers
         [HttpPatch("{id}/reorder")]
         public async Task<IActionResult> ReorderTaskAsync(int id, ReorderTaskDto reorderTaskDto)
         {
-            var taskToMove = await _unitOfWork.TaskItems.GetByIdAsync(id);
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var taskToMove = await _unitOfWork.TaskItems.GetTaskByIdForUserAsync(id, userId);
             if (taskToMove == null)
             {
                 return NotFound();
@@ -152,7 +194,7 @@ namespace KanbanFlow.API.Controllers
                 return NoContent(); // Nothing to do
             }
 
-            var tasksInColumn = (await _unitOfWork.TaskItems.FindAsync(t => t.ColumnId == taskToMove.ColumnId && t.Id != id)).OrderBy(t => t.Position).ToList();
+            var tasksInColumn = (await _unitOfWork.TaskItems.FindAsync(t => t.ColumnId == taskToMove.ColumnId && t.Id != id && t.UserId == userId)).OrderBy(t => t.Position).ToList();
 
             if (newPosition < oldPosition)
             {

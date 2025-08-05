@@ -4,34 +4,51 @@ using KanbanFlow.Core;
 using KanbanFlow.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using KanbanFlow.API.Services;
 
 namespace KanbanFlow.API.Controllers
 {
     [ApiVersion("1.0")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
+    [Authorize]
     public class ProjectsController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IUserContextService _userContextService;
 
-        public ProjectsController(IUnitOfWork unitOfWork, IMapper mapper)
+        public ProjectsController(IUnitOfWork unitOfWork, IMapper mapper, IUserContextService userContextService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _userContextService = userContextService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProjectDto>>> GetProjects()
         {
-            var projects = await _unitOfWork.Projects.GetAllProjectsWithDetailsAsync();
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var projects = await _unitOfWork.Projects.GetAllProjectsWithDetailsAsync(userId);
             return Ok(_mapper.Map<IEnumerable<ProjectDto>>(projects));
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ProjectDto>> GetProject(int id)
         {
-            var project = await _unitOfWork.Projects.GetProjectWithDetailsAsync(id);
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var project = await _unitOfWork.Projects.GetProjectWithDetailsAsync(id, userId);
 
             if (project == null)
             {
@@ -44,13 +61,19 @@ namespace KanbanFlow.API.Controllers
         [HttpGet("{projectId}/tasks")]
         public async Task<ActionResult<IEnumerable<TaskItemDto>>> GetTasksForProject(int projectId)
         {
-            var projectExists = await _unitOfWork.Projects.GetByIdAsync(projectId);
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var projectExists = await _unitOfWork.Projects.GetProjectByIdForUserAsync(projectId, userId);
             if (projectExists == null)
             {
                 return NotFound("Project not found.");
             }
 
-            var tasks = await _unitOfWork.TaskItems.FindAsync(t => t.Column != null && t.Column.ProjectId == projectId);
+            var tasks = await _unitOfWork.TaskItems.GetTasksForColumnAsync(projectId, userId);
 
             return Ok(_mapper.Map<IEnumerable<TaskItemDto>>(tasks));
         }
@@ -58,7 +81,14 @@ namespace KanbanFlow.API.Controllers
         [HttpPost]
         public async Task<ActionResult<ProjectDto>> PostProject(CreateProjectDto projectDto)
         {
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
             var project = _mapper.Map<Project>(projectDto);
+            project.UserId = userId;
             await _unitOfWork.Projects.AddAsync(project);
             await _unitOfWork.CompleteAsync();
 
@@ -68,7 +98,13 @@ namespace KanbanFlow.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProject(int id, UpdateProjectDto projectDto)
         {
-            var project = await _unitOfWork.Projects.GetByIdAsync(id);
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var project = await _unitOfWork.Projects.GetProjectByIdForUserAsync(id, userId);
             if (project == null)
             {
                 return NotFound();
@@ -93,7 +129,13 @@ namespace KanbanFlow.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(int id)
         {
-            var project = await _unitOfWork.Projects.GetByIdAsync(id);
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var project = await _unitOfWork.Projects.GetProjectByIdForUserAsync(id, userId);
             if (project == null)
             {
                 return NotFound();

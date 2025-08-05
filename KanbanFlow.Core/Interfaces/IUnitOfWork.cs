@@ -6,6 +6,7 @@ namespace KanbanFlow.Core.Interfaces
         IProjectRepository Projects { get; }
         IColumnRepository Columns { get; }
         ITaskItemRepository TaskItems { get; }
+        IUserRepository Users { get; }
         Task<int> CompleteAsync();
     }
 }

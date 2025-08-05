@@ -11,20 +11,39 @@ namespace KanbanFlow.API.Data.Repositories
         {
         }
 
-        public async Task<Project?> GetProjectWithDetailsAsync(int id)
+        public async Task<Project?> GetProjectWithDetailsAsync(int id, int? userId = null)
         {
-            return await _context.Projects
+            var query = _context.Projects
                 .Include(p => p.Columns)
                 .ThenInclude(c => c.TaskItems)
-                .FirstOrDefaultAsync(p => p.Id == id);
+                .Where(p => p.Id == id);
+            
+            if (userId.HasValue)
+                query = query.Where(p => p.UserId == userId.Value);
+            
+            return await query.FirstOrDefaultAsync();
         }
 
-        public async Task<IEnumerable<Project>> GetAllProjectsWithDetailsAsync()
+        public async Task<IEnumerable<Project>> GetAllProjectsWithDetailsAsync(int? userId = null)
         {
-            return await _context.Projects
+            IQueryable<Project> query = _context.Projects
                 .Include(p => p.Columns)
-                .ThenInclude(c => c.TaskItems)
-                .ToListAsync();
+                .ThenInclude(c => c.TaskItems);
+            
+            if (userId.HasValue)
+                query = query.Where(p => p.UserId == userId.Value);
+            
+            return await query.ToListAsync();
+        }
+
+        public async Task<Project?> GetProjectByIdForUserAsync(int id, int? userId = null)
+        {
+            var query = _context.Projects.Where(p => p.Id == id);
+            
+            if (userId.HasValue)
+                query = query.Where(p => p.UserId == userId.Value);
+            
+            return await query.FirstOrDefaultAsync();
         }
     }
 }

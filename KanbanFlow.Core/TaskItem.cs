@@ -19,11 +19,13 @@ namespace KanbanFlow.Core
         public TaskStatus Status { get; set; }
 
         public int ColumnId { get; set; } // Foreign Key
+        public int? UserId { get; set; } // Foreign Key for ownership
         public int Position { get; set; }
 
         public byte[] RowVersion { get; set; } = [];
 
         public virtual Column? Column { get; set; }
+        public virtual User? User { get; set; }
 
         public bool ChangeStatus(TaskStatus newStatus)
         {

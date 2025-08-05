@@ -9,6 +9,7 @@ namespace KanbanFlow.API.Data.Repositories
         public IProjectRepository Projects { get; private set; }
         public IColumnRepository Columns { get; private set; }
         public ITaskItemRepository TaskItems { get; private set; }
+        public IUserRepository Users { get; private set; }
 
         public UnitOfWork(AppDbContext context)
         {
@@ -16,6 +17,7 @@ namespace KanbanFlow.API.Data.Repositories
             Projects = new ProjectRepository(_context);
             Columns = new ColumnRepository(_context);
             TaskItems = new TaskItemRepository(_context);
+            Users = new UserRepository(_context);
         }
 
         public async Task<int> CompleteAsync()
