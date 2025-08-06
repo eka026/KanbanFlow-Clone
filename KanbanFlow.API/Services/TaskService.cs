@@ -44,8 +44,6 @@ public class TaskService : ITaskService
 
         var task = _mapper.Map<TaskItem>(taskDto);
         task.UserId = userId;
-        task.CreatedDate = DateTime.UtcNow;
-        task.Status = Core.TaskStatus.ToDo;
         task.Position = column.TaskItems.Any() ? column.TaskItems.Max(t => t.Position) + 1 : 0;
 
         await _unitOfWork.TaskItems.AddAsync(task);

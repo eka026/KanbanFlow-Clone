@@ -25,6 +25,12 @@ namespace KanbanFlow.Core
         public virtual Column? Column { get; set; }
         public virtual User? User { get; set; }
 
+        public TaskItem()
+        {
+            CreatedDate = DateTime.UtcNow;
+            Status = TaskStatus.ToDo;
+        }
+
         public bool ChangeStatus(TaskStatus newStatus)
         {
             if (Status == newStatus) return true;

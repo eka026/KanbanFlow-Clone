@@ -7,6 +7,7 @@ namespace KanbanFlow.Core
         public int Id { get; set; }
         public required string Name { get; set; }
         public int? UserId { get; set; } // Foreign Key for ownership
+        public DateTime CreatedDate { get; set; }
 
         public byte[] RowVersion { get; set; } = [];
 
@@ -15,6 +16,7 @@ namespace KanbanFlow.Core
 
         public Project()
         {
+            CreatedDate = DateTime.UtcNow;
             Columns = new HashSet<Column>();
         }
 
