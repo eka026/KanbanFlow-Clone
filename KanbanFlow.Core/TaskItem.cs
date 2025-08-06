@@ -1,5 +1,3 @@
-using System.Diagnostics.Contracts;
-
 namespace KanbanFlow.Core
 {
     // Enum to represent the status of a task
