@@ -14,6 +14,14 @@ namespace KanbanFlow.API.Data
         public DbSet<Project> Projects { get; set; }
         public DbSet<Column> Columns { get; set; }
 
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseLazyLoadingProxies();
+            }
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // User entity configuration
