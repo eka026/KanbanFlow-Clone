@@ -1,9 +1,12 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace KanbanFlow.Core
 {
     public class Column
     {
         public int Id { get; set; }
-        public required string Name { get; set; }
+        [Required]
+        public string Name { get; set; } = string.Empty;
         public int ProjectId { get; set; }
         public int? UserId { get; set; } // Foreign Key for ownership
         public int? WipLimit { get; set; }

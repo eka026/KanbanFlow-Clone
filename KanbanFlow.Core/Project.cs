@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KanbanFlow.Core
@@ -5,7 +6,8 @@ namespace KanbanFlow.Core
     public class Project
     {
         public int Id { get; set; }
-        public required string Name { get; set; }
+        [Required]
+        public string Name { get; set; } = string.Empty;
         public int? UserId { get; set; } // Foreign Key for ownership
         public DateTime CreatedDate { get; set; }
 

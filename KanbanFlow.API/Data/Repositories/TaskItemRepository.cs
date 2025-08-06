@@ -14,7 +14,7 @@ namespace KanbanFlow.API.Data.Repositories
         public async Task<IEnumerable<TaskItem>> GetTasksForUserAsync(int? userId = null)
         {
             IQueryable<TaskItem> query = _context.TaskItems
-                .Include(t => t.Column)
+                .Include(t => t.Column!)
                 .ThenInclude(c => c.Project);
             
             if (userId.HasValue)
@@ -26,7 +26,7 @@ namespace KanbanFlow.API.Data.Repositories
         public async Task<TaskItem?> GetTaskByIdForUserAsync(int id, int? userId = null)
         {
             IQueryable<TaskItem> query = _context.TaskItems
-                .Include(t => t.Column)
+                .Include(t => t.Column!)
                 .ThenInclude(c => c.Project)
                 .Where(t => t.Id == id);
             

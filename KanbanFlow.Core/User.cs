@@ -1,10 +1,14 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace KanbanFlow.Core
 {
     public class User
     {
         public int Id { get; set; }
-        public required string Username { get; set; }
-        public required string PasswordHash { get; set; }
+        [Required]
+        public string Username { get; set; } = string.Empty;
+        [Required]
+        public string PasswordHash { get; set; } = string.Empty;
         public string? Email { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime? LastLoginDate { get; set; }
