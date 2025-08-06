@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using KanbanFlow.Core.Columns;
+using KanbanFlow.Core.Users;
 
-namespace KanbanFlow.Core
+namespace KanbanFlow.Core.Tasks
 {
     // Enum to represent the status of a task
     public enum TaskStatus

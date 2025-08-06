@@ -1,7 +1,6 @@
+using KanbanFlow.Core.Boards;
 
-using KanbanFlow.Core;
-
-namespace KanbanFlow.Core.Interfaces
+namespace KanbanFlow.Core.Common
 {
     public interface IProjectRepository : IRepository<Project>
     {

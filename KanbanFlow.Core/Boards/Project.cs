@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using KanbanFlow.Core.Columns;
+using KanbanFlow.Core.Users;
 
-namespace KanbanFlow.Core
+namespace KanbanFlow.Core.Boards
 {
     public class Project
     {
@@ -21,6 +23,5 @@ namespace KanbanFlow.Core
             CreatedDate = DateTime.UtcNow;
             Columns = new HashSet<Column>();
         }
-
     }
 }

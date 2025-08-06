@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using KanbanFlow.API.Dtos;
-using KanbanFlow.Core.Interfaces;
+using KanbanFlow.Core.Common;
 using KanbanFlow.API.Services;
-using KanbanFlow.Core;
+using KanbanFlow.Core.Users;
 using Microsoft.AspNetCore.Authorization;
 
 namespace KanbanFlow.API.Controllers;

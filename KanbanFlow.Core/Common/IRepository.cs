@@ -1,7 +1,6 @@
-
 using System.Linq.Expressions;
 
-namespace KanbanFlow.Core.Interfaces
+namespace KanbanFlow.Core.Common
 {
     public interface IRepository<T> where T : class
     {

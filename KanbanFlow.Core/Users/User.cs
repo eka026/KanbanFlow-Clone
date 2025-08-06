@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace KanbanFlow.Core
+namespace KanbanFlow.Core.Users
 {
     public class User
     {
@@ -20,4 +20,4 @@ namespace KanbanFlow.Core
             CreatedDate = DateTime.UtcNow;
         }
     }
-} 
+}

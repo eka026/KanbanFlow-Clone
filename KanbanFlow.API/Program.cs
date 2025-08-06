@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using KanbanFlow.API.Data;
-using KanbanFlow.Core.Interfaces;
+using KanbanFlow.Core.Common;
 using KanbanFlow.API.Data.Repositories;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using KanbanFlow.API;

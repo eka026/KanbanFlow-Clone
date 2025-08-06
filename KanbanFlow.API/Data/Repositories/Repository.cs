@@ -1,5 +1,5 @@
 
-using KanbanFlow.Core.Interfaces;
+using KanbanFlow.Core.Common;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 

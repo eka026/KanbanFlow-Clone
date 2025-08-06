@@ -1,6 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using KanbanFlow.Core.Boards;
+using KanbanFlow.Core.Tasks;
+using KanbanFlow.Core.Users;
 
-namespace KanbanFlow.Core
+namespace KanbanFlow.Core.Columns
 {
     public class Column
     {

@@ -1,7 +1,6 @@
+using KanbanFlow.Core.Tasks;
 
-using KanbanFlow.Core;
-
-namespace KanbanFlow.Core.Interfaces
+namespace KanbanFlow.Core.Common
 {
     public interface ITaskItemRepository : IRepository<TaskItem>
     {

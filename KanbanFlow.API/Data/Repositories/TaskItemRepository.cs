@@ -1,6 +1,6 @@
 
-using KanbanFlow.Core;
-using KanbanFlow.Core.Interfaces;
+using KanbanFlow.Core.Tasks;
+using KanbanFlow.Core.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace KanbanFlow.API.Data.Repositories

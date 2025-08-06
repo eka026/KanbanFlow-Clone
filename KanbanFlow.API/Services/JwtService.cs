@@ -2,7 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using KanbanFlow.Core;
+using KanbanFlow.Core.Users;
 
 namespace KanbanFlow.API.Services;
 

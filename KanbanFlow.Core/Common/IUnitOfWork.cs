@@ -1,5 +1,4 @@
-
-namespace KanbanFlow.Core.Interfaces
+namespace KanbanFlow.Core.Common
 {
     public interface IUnitOfWork : IDisposable
     {

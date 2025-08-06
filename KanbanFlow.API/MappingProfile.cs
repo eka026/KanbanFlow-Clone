@@ -1,24 +1,27 @@
 using AutoMapper;
 using KanbanFlow.API.Dtos;
-using KanbanFlow.Core;
+using KanbanFlow.Core.Boards;
+using KanbanFlow.Core.Columns;
+using KanbanFlow.Core.Tasks;
 
-namespace KanbanFlow.API;
-
-public class MappingProfile : Profile
+namespace KanbanFlow.API
 {
-    public MappingProfile()
+    public class MappingProfile : Profile
     {
-        // Entity to DTO
-        CreateMap<Project, ProjectDto>();
-        CreateMap<Column, ColumnDto>();
-        CreateMap<TaskItem, TaskItemDto>();
+        public MappingProfile()
+        {
+            // Entity to DTO mappings
+            CreateMap<Project, ProjectDto>();
+            CreateMap<Column, ColumnDto>();
+            CreateMap<TaskItem, TaskItemDto>();
 
-        // DTO to Entity
-        CreateMap<CreateProjectDto, Project>();
-        CreateMap<UpdateProjectDto, Project>();
-        CreateMap<CreateColumnDto, Column>();
-        CreateMap<UpdateColumnDto, Column>();
-        CreateMap<CreateTaskItemDto, TaskItem>();
-        CreateMap<UpdateTaskItemDto, TaskItem>();
+            // DTO to Entity mappings
+            CreateMap<CreateProjectDto, Project>();
+            CreateMap<UpdateProjectDto, Project>();
+            CreateMap<CreateColumnDto, Column>();
+            CreateMap<UpdateColumnDto, Column>();
+            CreateMap<CreateTaskItemDto, TaskItem>();
+            CreateMap<UpdateTaskItemDto, TaskItem>();
+        }
     }
 }

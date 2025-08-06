@@ -1,5 +1,5 @@
 
-using KanbanFlow.Core.Interfaces;
+using KanbanFlow.Core.Common;
 
 namespace KanbanFlow.API.Data.Repositories
 {

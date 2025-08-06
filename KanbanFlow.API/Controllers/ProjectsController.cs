@@ -1,7 +1,7 @@
 using AutoMapper;
 using KanbanFlow.API.Dtos;
-using KanbanFlow.Core;
-using KanbanFlow.Core.Interfaces;
+using KanbanFlow.Core.Boards;
+using KanbanFlow.Core.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;

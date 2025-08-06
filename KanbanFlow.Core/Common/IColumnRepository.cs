@@ -1,7 +1,6 @@
+using KanbanFlow.Core.Columns;
 
-using KanbanFlow.Core;
-
-namespace KanbanFlow.Core.Interfaces
+namespace KanbanFlow.Core.Common
 {
     public interface IColumnRepository : IRepository<Column>
     {

@@ -1,4 +1,7 @@
-using KanbanFlow.Core;
+using KanbanFlow.Core.Boards;
+using KanbanFlow.Core.Columns;
+using KanbanFlow.Core.Tasks;
+using KanbanFlow.Core.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace KanbanFlow.API.Data
