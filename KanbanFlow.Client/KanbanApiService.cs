@@ -8,9 +8,9 @@ public class KanbanApiService
     private readonly string? _apiUrl;
     private string? _authToken;
 
-    public KanbanApiService(string? apiUrl)
+    public KanbanApiService(HttpClient httpClient, string? apiUrl)
     {
-        _httpClient = new HttpClient();
+        _httpClient = httpClient;
         _apiUrl = apiUrl;
     }
 

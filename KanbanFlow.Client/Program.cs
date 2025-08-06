@@ -1,5 +1,6 @@
 using KanbanFlow.Client.Dtos;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 IConfiguration configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -16,7 +17,22 @@ if (string.IsNullOrEmpty(apiUrl))
 Console.WriteLine("KanbanFlow Client");
 Console.WriteLine("-----------------");
 
-var apiService = new KanbanApiService(apiUrl);
+var services = new ServiceCollection();
+services.AddSingleton<IConfiguration>(configuration);
+services.AddHttpClient<KanbanApiService>((provider, client) =>
+{
+    // Optionally configure client.BaseAddress here if desired
+});
+services.AddSingleton(sp =>
+{
+    var httpClient = sp.GetRequiredService<HttpClient>();
+    var config = sp.GetRequiredService<IConfiguration>();
+    var apiUrl = config["ApiUrl"];
+    return new KanbanApiService(httpClient, apiUrl);
+});
+
+var serviceProvider = services.BuildServiceProvider();
+var apiService = serviceProvider.GetRequiredService<KanbanApiService>();
 
 while (true)
 {
