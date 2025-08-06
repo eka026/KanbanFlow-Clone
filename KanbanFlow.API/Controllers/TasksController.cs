@@ -15,14 +15,12 @@ namespace KanbanFlow.API.Controllers
     [Authorize]
     public class TasksController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
+        private readonly ITaskService _taskService;
         private readonly IUserContextService _userContextService;
 
-        public TasksController(IUnitOfWork unitOfWork, IMapper mapper, IUserContextService userContextService)
+        public TasksController(ITaskService taskService, IUserContextService userContextService)
         {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
+            _taskService = taskService;
             _userContextService = userContextService;
         }
 
@@ -35,8 +33,15 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var tasks = await _unitOfWork.TaskItems.GetTasksForUserAsync(userId);
-            return Ok(_mapper.Map<IEnumerable<TaskItemDto>>(tasks));
+            try
+            {
+                var tasks = await _taskService.GetTasksForUserAsync(userId.Value);
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching tasks.", error = ex.Message });
+            }
         }
 
         [HttpGet("{id}", Name = "GetTaskById")]
@@ -48,14 +53,20 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var task = await _unitOfWork.TaskItems.GetTaskByIdForUserAsync(id, userId);
-
-            if (task == null)
+            try
             {
-                return NotFound();
-            }
+                var task = await _taskService.GetTaskByIdAsync(id, userId.Value);
+                if (task == null)
+                {
+                    return NotFound();
+                }
 
-            return Ok(_mapper.Map<TaskItemDto>(task));
+                return Ok(task);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching the task.", error = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -67,27 +78,19 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var column = await _unitOfWork.Columns.GetColumnWithDetailsAsync(taskDto.ColumnId, userId);
-            if (column == null)
+            try
             {
-                return BadRequest("Invalid column ID.");
+                var createdTask = await _taskService.CreateTaskAsync(taskDto, userId.Value);
+                return CreatedAtAction(nameof(GetTaskByIdAsync), new { id = createdTask.Id }, createdTask);
             }
-
-            if (column.WipLimit.HasValue && column.TaskItems.Count >= column.WipLimit.Value)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest("WIP limit reached for this column.");
+                return BadRequest(new { message = ex.Message });
             }
-
-            var task = _mapper.Map<TaskItem>(taskDto);
-            task.UserId = userId;
-            task.CreatedDate = DateTime.UtcNow;
-            task.Status = Core.TaskStatus.ToDo;
-            task.Position = column.TaskItems.Any() ? column.TaskItems.Max(t => t.Position) + 1 : 0;
-
-            await _unitOfWork.TaskItems.AddAsync(task);
-            await _unitOfWork.CompleteAsync();
-
-            return CreatedAtAction(nameof(GetTaskByIdAsync), new { id = task.Id }, _mapper.Map<TaskItemDto>(task));
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while creating the task.", error = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
@@ -99,55 +102,24 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var task = await _unitOfWork.TaskItems.GetTaskByIdForUserAsync(id, userId);
-            if (task == null)
-            {
-                return NotFound();
-            }
-
-            var originalColumnId = task.ColumnId;
-            var newColumnId = taskDto.ColumnId;
-
-            if (originalColumnId != newColumnId)
-            {
-                var newColumn = await _unitOfWork.Columns.GetColumnWithDetailsAsync(newColumnId, userId);
-                if (newColumn == null)
-                {
-                    return BadRequest("Invalid column ID.");
-                }
-
-                if (newColumn.WipLimit.HasValue && newColumn.TaskItems.Count >= newColumn.WipLimit.Value)
-                {
-                    return BadRequest("WIP limit reached for this column.");
-                }
-
-                var tasksToUpdate = await _unitOfWork.TaskItems.FindAsync(t => t.ColumnId == originalColumnId && t.Position > task.Position && t.UserId == userId);
-
-                foreach (var taskToUpdate in tasksToUpdate)
-                {
-                    taskToUpdate.Position--;
-                }
-            }
-
-            _mapper.Map(taskDto, task);
-
-            if (!task.ChangeStatus(taskDto.Status))
-            {
-                return BadRequest("Invalid status transition.");
-            }
-
-            _unitOfWork.TaskItems.Update(task);
-
             try
             {
-                await _unitOfWork.CompleteAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return Conflict("The task has been modified by another user. Please reload and try again.");
-            }
+                var updatedTask = await _taskService.UpdateTaskAsync(id, taskDto, userId.Value);
+                if (updatedTask == null)
+                {
+                    return NotFound();
+                }
 
-            return NoContent();
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating the task.", error = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
@@ -159,20 +131,24 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var task = await _unitOfWork.TaskItems.GetTaskByIdForUserAsync(id, userId);
-            if (task == null)
+            try
             {
-                return NotFound();
+                var deleted = await _taskService.DeleteTaskAsync(id, userId.Value);
+                if (!deleted)
+                {
+                    return NotFound();
+                }
+
+                return NoContent();
             }
-
-            _unitOfWork.TaskItems.Remove(task);
-            await _unitOfWork.CompleteAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while deleting the task.", error = ex.Message });
+            }
         }
 
         [HttpPatch("{id}/reorder")]
-        public async Task<IActionResult> ReorderTaskAsync(int id, ReorderTaskDto reorderTaskDto)
+        public async Task<IActionResult> ReorderTaskAsync(int id, ReorderTaskDto reorderDto)
         {
             var userId = _userContextService.GetCurrentUserId();
             if (!userId.HasValue)
@@ -180,44 +156,20 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var taskToMove = await _unitOfWork.TaskItems.GetTaskByIdForUserAsync(id, userId);
-            if (taskToMove == null)
+            try
             {
-                return NotFound();
-            }
-
-            var oldPosition = taskToMove.Position;
-            var newPosition = reorderTaskDto.Position;
-
-            if (oldPosition == newPosition)
-            {
-                return NoContent(); // Nothing to do
-            }
-
-            var tasksInColumn = (await _unitOfWork.TaskItems.FindAsync(t => t.ColumnId == taskToMove.ColumnId && t.Id != id && t.UserId == userId)).OrderBy(t => t.Position).ToList();
-
-            if (newPosition < oldPosition)
-            {
-                // Task is moving up, shift other tasks down
-                foreach (var task in tasksInColumn.Where(t => t.Position >= newPosition && t.Position < oldPosition))
+                var reordered = await _taskService.ReorderTaskAsync(id, reorderDto.Position, userId.Value);
+                if (!reordered)
                 {
-                    task.Position++;
+                    return BadRequest("Invalid position or task not found.");
                 }
+
+                return NoContent();
             }
-            else
+            catch (Exception ex)
             {
-                // Task is moving down, shift other tasks up
-                foreach (var task in tasksInColumn.Where(t => t.Position > oldPosition && t.Position <= newPosition))
-                {
-                    task.Position--;
-                }
+                return StatusCode(500, new { message = "An error occurred while reordering the task.", error = ex.Message });
             }
-
-            taskToMove.Position = newPosition;
-
-            await _unitOfWork.CompleteAsync();
-
-            return NoContent();
         }
     }
 }

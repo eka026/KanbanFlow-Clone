@@ -15,14 +15,12 @@ namespace KanbanFlow.API.Controllers
     [Authorize]
     public class ColumnsController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
+        private readonly IColumnService _columnService;
         private readonly IUserContextService _userContextService;
 
-        public ColumnsController(IUnitOfWork unitOfWork, IMapper mapper, IUserContextService userContextService)
+        public ColumnsController(IColumnService columnService, IUserContextService userContextService)
         {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
+            _columnService = columnService;
             _userContextService = userContextService;
         }
 
@@ -35,9 +33,15 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var columns = await _unitOfWork.Columns.GetAllAsync();
-            var userColumns = columns.Where(c => c.UserId == userId.Value);
-            return Ok(_mapper.Map<IEnumerable<ColumnDto>>(userColumns));
+            try
+            {
+                var columns = await _columnService.GetColumnsForUserAsync(userId.Value);
+                return Ok(columns);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching columns.", error = ex.Message });
+            }
         }
 
         [HttpGet("{id}")]
@@ -49,62 +53,93 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var column = await _unitOfWork.Columns.GetColumnWithDetailsAsync(id, userId);
-
-            if (column == null)
+            try
             {
-                return NotFound();
-            }
+                var column = await _columnService.GetColumnByIdAsync(id, userId.Value);
+                if (column == null)
+                {
+                    return NotFound();
+                }
 
-            return Ok(_mapper.Map<ColumnDto>(column));
+                return Ok(column);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching the column.", error = ex.Message });
+            }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<ColumnDto>> PostColumn(CreateColumnDto columnDto)
+        [HttpGet("project/{projectId}")]
+        public async Task<ActionResult<IEnumerable<ColumnDto>>> GetColumnsForProject(int projectId)
         {
             var userId = _userContextService.GetCurrentUserId();
             if (!userId.HasValue)
             {
                 return Unauthorized();
             }
-
-            var column = _mapper.Map<Column>(columnDto);
-            column.UserId = userId;
-            await _unitOfWork.Columns.AddAsync(column);
-            await _unitOfWork.CompleteAsync();
-
-            return CreatedAtAction("GetColumn", new { id = column.Id }, _mapper.Map<ColumnDto>(column));
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutColumn(int id, UpdateColumnDto columnDto)
-        {
-            var userId = _userContextService.GetCurrentUserId();
-            if (!userId.HasValue)
-            {
-                return Unauthorized();
-            }
-
-            var column = await _unitOfWork.Columns.GetColumnByIdForUserAsync(id, userId);
-            if (column == null)
-            {
-                return NotFound();
-            }
-
-            _mapper.Map(columnDto, column);
-
-            _unitOfWork.Columns.Update(column);
 
             try
             {
-                await _unitOfWork.CompleteAsync();
+                var columns = await _columnService.GetColumnsForProjectAsync(projectId, userId.Value);
+                return Ok(columns);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                return Conflict("The column has been modified by another user. Please reload and try again.");
+                return StatusCode(500, new { message = "An error occurred while fetching columns for the project.", error = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<ColumnDto>> CreateColumn(CreateColumnDto columnDto)
+        {
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
             }
 
-            return NoContent();
+            try
+            {
+                var createdColumn = await _columnService.CreateColumnAsync(columnDto, userId.Value);
+                return CreatedAtAction(nameof(GetColumn), new { id = createdColumn.Id }, createdColumn);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while creating the column.", error = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateColumn(int id, UpdateColumnDto columnDto)
+        {
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var updatedColumn = await _columnService.UpdateColumnAsync(id, columnDto, userId.Value);
+                if (updatedColumn == null)
+                {
+                    return NotFound();
+                }
+
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating the column.", error = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
@@ -116,16 +151,20 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var column = await _unitOfWork.Columns.GetColumnByIdForUserAsync(id, userId);
-            if (column == null)
+            try
             {
-                return NotFound();
+                var deleted = await _columnService.DeleteColumnAsync(id, userId.Value);
+                if (!deleted)
+                {
+                    return NotFound();
+                }
+
+                return NoContent();
             }
-
-            _unitOfWork.Columns.Remove(column);
-            await _unitOfWork.CompleteAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while deleting the column.", error = ex.Message });
+            }
         }
     }
 }

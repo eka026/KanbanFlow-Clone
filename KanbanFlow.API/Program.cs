@@ -92,6 +92,11 @@ builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserContextService, UserContextService>();
 
+// Register business services
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IColumnService, ColumnService>();
+
 // -- Application Pipeline Configuration --
 
 var app = builder.Build();

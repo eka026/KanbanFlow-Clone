@@ -15,14 +15,12 @@ namespace KanbanFlow.API.Controllers
     [Authorize]
     public class ProjectsController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
+        private readonly IProjectService _projectService;
         private readonly IUserContextService _userContextService;
 
-        public ProjectsController(IUnitOfWork unitOfWork, IMapper mapper, IUserContextService userContextService)
+        public ProjectsController(IProjectService projectService, IUserContextService userContextService)
         {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
+            _projectService = projectService;
             _userContextService = userContextService;
         }
 
@@ -35,8 +33,15 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var projects = await _unitOfWork.Projects.GetAllProjectsWithDetailsAsync(userId);
-            return Ok(_mapper.Map<IEnumerable<ProjectDto>>(projects));
+            try
+            {
+                var projects = await _projectService.GetProjectsForUserAsync(userId.Value);
+                return Ok(projects);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching projects.", error = ex.Message });
+            }
         }
 
         [HttpGet("{id}")]
@@ -48,82 +53,69 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var project = await _unitOfWork.Projects.GetProjectWithDetailsAsync(id, userId);
-
-            if (project == null)
+            try
             {
-                return NotFound();
+                var project = await _projectService.GetProjectByIdAsync(id, userId.Value);
+                if (project == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(project);
             }
-
-            return Ok(_mapper.Map<ProjectDto>(project));
-        }
-
-        [HttpGet("{projectId}/tasks")]
-        public async Task<ActionResult<IEnumerable<TaskItemDto>>> GetTasksForProject(int projectId)
-        {
-            var userId = _userContextService.GetCurrentUserId();
-            if (!userId.HasValue)
+            catch (Exception ex)
             {
-                return Unauthorized();
+                return StatusCode(500, new { message = "An error occurred while fetching the project.", error = ex.Message });
             }
-
-            var projectExists = await _unitOfWork.Projects.GetProjectByIdForUserAsync(projectId, userId);
-            if (projectExists == null)
-            {
-                return NotFound("Project not found.");
-            }
-
-            var tasks = await _unitOfWork.TaskItems.GetTasksForColumnAsync(projectId, userId);
-
-            return Ok(_mapper.Map<IEnumerable<TaskItemDto>>(tasks));
         }
 
         [HttpPost]
-        public async Task<ActionResult<ProjectDto>> PostProject(CreateProjectDto projectDto)
+        public async Task<ActionResult<ProjectDto>> CreateProject(CreateProjectDto projectDto)
         {
             var userId = _userContextService.GetCurrentUserId();
             if (!userId.HasValue)
             {
                 return Unauthorized();
             }
-
-            var project = _mapper.Map<Project>(projectDto);
-            project.UserId = userId;
-            await _unitOfWork.Projects.AddAsync(project);
-            await _unitOfWork.CompleteAsync();
-
-            return CreatedAtAction(nameof(GetProject), new { id = project.Id }, _mapper.Map<ProjectDto>(project));
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProject(int id, UpdateProjectDto projectDto)
-        {
-            var userId = _userContextService.GetCurrentUserId();
-            if (!userId.HasValue)
-            {
-                return Unauthorized();
-            }
-
-            var project = await _unitOfWork.Projects.GetProjectByIdForUserAsync(id, userId);
-            if (project == null)
-            {
-                return NotFound();
-            }
-
-            _mapper.Map(projectDto, project);
-
-            _unitOfWork.Projects.Update(project);
 
             try
             {
-                await _unitOfWork.CompleteAsync();
+                var createdProject = await _projectService.CreateProjectAsync(projectDto, userId.Value);
+                return CreatedAtAction(nameof(GetProject), new { id = createdProject.Id }, createdProject);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                return Conflict("The project has been modified by another user. Please reload and try again.");
+                return StatusCode(500, new { message = "An error occurred while creating the project.", error = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProject(int id, UpdateProjectDto projectDto)
+        {
+            var userId = _userContextService.GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
             }
 
-            return NoContent();
+            try
+            {
+                var updatedProject = await _projectService.UpdateProjectAsync(id, projectDto, userId.Value);
+                if (updatedProject == null)
+                {
+                    return NotFound();
+                }
+
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating the project.", error = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
@@ -135,16 +127,20 @@ namespace KanbanFlow.API.Controllers
                 return Unauthorized();
             }
 
-            var project = await _unitOfWork.Projects.GetProjectByIdForUserAsync(id, userId);
-            if (project == null)
+            try
             {
-                return NotFound();
+                var deleted = await _projectService.DeleteProjectAsync(id, userId.Value);
+                if (!deleted)
+                {
+                    return NotFound();
+                }
+
+                return NoContent();
             }
-
-            _unitOfWork.Projects.Remove(project);
-            await _unitOfWork.CompleteAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while deleting the project.", error = ex.Message });
+            }
         }
     }
 }
